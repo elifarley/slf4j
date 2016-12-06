@@ -25,7 +25,9 @@
 package org.slf4j;
 
 import java.io.Closeable;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.helpers.NOPMDCAdapter;
 import org.slf4j.helpers.BasicMDCAdapter;
@@ -79,6 +81,47 @@ public class MDC {
 
         public void close() {
             MDC.remove(this.key);
+        }
+    }
+
+    /**
+     * An adapter to remove multiple keys when done.
+     */
+    public static class MDCCloseableContext implements Closeable {
+        private final Set<String> keys = new HashSet<String>();
+
+        private MDCCloseableContext() {
+        }
+
+        public MDCCloseableContext putAll(Map<String, Object> map) {
+            for(Map.Entry<String, Object> it: map.entrySet() ) {
+                put(it.getKey(), it.getValue());
+            }
+            return this;
+        }
+
+        public MDCCloseableContext put(String key, Object value) {
+            MDC.put(key, String.valueOf(value));
+            keys.add(key);
+            return this;
+        }
+
+        public String get(String key) { return MDC.get(key); }
+
+        public void clear() {
+            for(String key: keys) {
+                MDC.remove(key);
+            }
+            keys.clear();
+        }
+
+        public boolean remove(String key) {
+            MDC.remove(key);
+            return keys.remove(key);
+        }
+
+        public void close() {
+            clear();
         }
     }
 
@@ -178,6 +221,10 @@ public class MDC {
     public static MDCCloseable putCloseable(String key, String val) throws IllegalArgumentException {
         put(key, val);
         return new MDCCloseable(key);
+    }
+
+    public static MDCCloseableContext closeableContext() throws IllegalArgumentException {
+        return new MDCCloseableContext();
     }
 
     /**
