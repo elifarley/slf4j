@@ -118,4 +118,19 @@ public class InvocationTest {
         assertNull(MDC.get("k"));
         MDC.clear();
     }
+
+    @Test
+    public void testMDCCloseableContext() {
+        MDC.MDCCloseableContext ctx = MDC.closeableContext().put("k", "v").put("a", 1);
+        assertNull(MDC.get("k"));
+        assertNull(MDC.get("a"));
+        ctx.put("b", 2);
+        assertNull(MDC.get("b"));
+        ctx.close();
+        assertNull(MDC.get("k"));
+        assertNull(MDC.get("a"));
+        assertNull(MDC.get("b"));
+        MDC.clear();
+    }
+
 }
